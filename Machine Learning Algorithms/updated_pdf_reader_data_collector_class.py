@@ -10,8 +10,9 @@ Created on Mon Jul  7 21:58:40 2025
 # aids in the data collection for training the ml-classification algorithms
 import os, re
 import pymupdf, fitz
+import nltk
 import pathlib
-from threading import Thread
+from threading import Thread, Lock
 import concurrent.futures
 import time
 from collections.abc import Iterable
@@ -26,17 +27,19 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from stripping_file_types import fileExtensionStripper
 
 class PdfDataCollector():
-    def __init__(self, file_path, pages=None, save_as_text_file=False, *, dpi=300):
+    def __init__(self, file_path, pages=None, save_as_text_file=False, normalise=False, *, dpi=300):
         self.file_path = file_path
         self.pages = pages
         self.save_as_text_file = save_as_text_file
+        self.normalise = normalise
         self.dpi = dpi
         
         self.file_name = os.path.basename(self.file_path)
         self.book_dict = {}
+        # Thread safe locking
+        self.lock = Lock()
 
         # initialise
         TEXT = self.get_document(self.file_path)
@@ -52,8 +55,30 @@ class PdfDataCollector():
         replacement = r' '
         
         filtered_sentence = re.sub(pattern, replacement, re.sub(PATTERN, replacement, sentence))
-        return '  '.join(filtered_sentence.lower().split())  # Remove extra spaces
-    
+        return ' '.join(filtered_sentence.lower().split())  # Remove extra spaces
+
+    def normalize_document(self, doc):
+        """ tokenize and remove stopwords """
+        # stopwords
+        roman_numerals = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x',
+                   'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx']
+        cardinals = ['nd', 'rd', 'th']
+        self.stop_words = nltk.corpus.stopwords.words('english')
+        self.stop_words = self.stop_words + list('qwertyuiopasdfghjklzxcvbnm') + roman_numerals + cardinals
+        self.wpt = nltk.WordPunctTokenizer()
+
+        # lower case and remove special characters\whitespaces
+        doc = re.sub(r'[^a-zA-Z0-9\s]', '', doc, re.I)
+        doc = doc.lower()
+        doc = doc.strip()
+        # tokenize document
+        tokens = self.wpt.tokenize(doc)
+        # filter stopwords out of document
+        filtered_tokens = [token for token in tokens if token not in self.stop_words]
+        # re-create document from filtered tokens
+        doc = ' '.join(filtered_tokens)
+        return doc
+
     def advanced_image_preprocessing(self, image):
         """
         Advanced image preprocessing for better OCR results
@@ -116,13 +141,10 @@ class PdfDataCollector():
                 filename = f"{prefix}_{i:04d}.{fmt.lower()}"
                 filepath = os.path.join(original_images, filename)
                 img.save(filepath, fmt)
-                #print(f"Saved: {filepath}")
         else:
             # original images
             images = convert_from_path(file_path, last_page=self.pages, dpi=self.dpi, fmt=fmt)
             print("\nconverted images =", images)
-
-        #Images = {} # enhanced images
 
         # creating folders corresponding to each book
         saved_images_book_path = os.path.join(enhanced_images, os.path.basename(file_path))
@@ -130,7 +152,6 @@ class PdfDataCollector():
             os.makedirs(saved_images_book_path)
 
         for i, img in enumerate(images,1):
-            #Images[f"{prefix}_{i:04d}.{fmt.lower()}"] = self.advanced_image_processing(img)
             Img = self.advanced_image_preprocessing(img)
             file_name = f"{prefix}_{i:04d}.{'PDF'.lower()}"
             file_path = os.path.join(saved_images_book_path, file_name)
@@ -138,76 +159,57 @@ class PdfDataCollector():
         
         logger.info(f"Converted {len(images)} pages to PDFs")
 
-        TEXT = self.Read_ocr(saved_images_book_path)
+        TEXT = self.Multithreading(saved_images_book_path)
 
-        return TEXT
+        return self.normalize_document(TEXT) if self.normalise else TEXT
     
-    def read_ocr(self, page_num, book_path):
-        __text = ""
-        with pymupdf.open(book_path) as file:
-            page = file[page_num]
-            try:
-                __Text = page.get_textpage_ocr(dpi=250, full=True)
-            except Exception:
-                pass
-            else:
-                __text += __Text.extractTEXT()
-    
-        # saving the information in a dictionary
-        self.book_dict[page_num] = __text
-        
-        return __text
-    
-    def Read_ocr(self, PATH):
+    def Read_ocr(self, FULL_PATH):
         """ Read """
         text = ""
-        folder = os.listdir(PATH)
-        print("finished loading files\n")
-        for page in folder:
-            full_path = os.path.join(PATH, page)
-            print(f"initialising scanning {full_path}\n")
-            #print(full_path)
-            with pymupdf.open(full_path) as file:
-                try:
-                    for pg in file[:1]:
+        page = os.path.basename(FULL_PATH).strip('.pdf').strip('page_')
+        print(f"initialising scanning page {page}\n")
+        with pymupdf.open(FULL_PATH) as file:
+            try:
+                for pg in file[:1]:
+                    try:
                         text_page = pg.get_textpage_ocr(full=True)
-                        print(f"getting text for {full_path}\n")
+                        #print(f"getting text for page {page}\n")
                         text += text_page.extractTEXT()
-                        #print('\npage_{} : {}'.format(idx, remove_characters_before_tokenization(Text)))
-                        # Clean up textpage
-                        #del text_page
-                except Exception as e:
-                    logger.error(f"Error reading PDF to text: {e}")
-                    #print(f"Error: {e}")
+                    except Exception as e:
+                        logger.error(f"pymupdf error: {e}")
+                        pass
+                    else:
+                        self.book_dict[page] = self.remove_characters_before_tokenization(text)
+            except Exception as e:
+                    logger.error(f"Reading OCR PDF to text error: {e}")
                     pass
+
         # delete the folder after processed
         #os.rmdir(PATH)
-        return self.remove_characters_before_tokenization(text)
     
-    def Multithreading(self, file_name):
-        """ takes in a folder of files or a single file and uses multithreading to speed up the processing
-            if not a single file then it processes the files faster.
-        """
+    def Multithreading(self, PATH):
+        """ takes in a folder of files and uses multithreading to speed up the processing """
         threads = []
-        FOLDER = os.listdir(file_name) if not os.path.isfile(file_name) else list(file_name)
+        FOLDER = os.listdir(PATH)
+        print('FOLDER =', FOLDER)
         # create threads
         for file in FOLDER:
-            thread = Thread(target=self.convert_pdf_to_images, args=(file))
+            path = os.path.join(PATH, file)
+            thread = Thread(target=self.Read_ocr, args=(path,))
             threads.append(thread)
-    
-        # start threads
-        #start_time = time.perf_counter()
-        print("ocr reading process started!\n")
-        for thread in threads:
-            thread.start()
-        # join threads
-        for thread in threads:
-            thread.join()
-            
-        print("process finished!\n")
-        #finish_time = time.perf_counter()
-    
-        #print("total time taken = {:.2f}\n".format(finish_time - start_time))
+
+        with self.lock:
+            for thread in threads:
+                thread.start()
+            # join threads
+            for thread in threads:
+                thread.join()
+        
+        Text = ""
+        for page in sorted(self.book_dict):
+            Text += self.book_dict[page]
+
+        return Text
 
     def get_document(self, filename):
         """ Returns a text file of the selected document"""
@@ -252,39 +254,36 @@ class PdfDataCollector():
             pages_to_process = min(self.pages or doc_length, doc_length)
             
             # Test first few pages to determine document type (more conservative)
-            test_pages = min(3, doc_length)
+            test_pages = min(5, doc_length)
             
             for page_num in range(test_pages):
                 try:
                     page = doc[page_num]
                     if page is None:
                         continue
-                    
                     # Test for digital text first (safer)
                     try:
-                        text = page.get_text()
+                        text = page.get_text() 
                         if text and text.strip():
                             digital_pages += 1
-                            break
-                    except Exception:
+                            continue
+                        elif page.get_textpage_ocr():
+                            ocr_pages += 1
+                            continue
+                        else:
+                            raise Exception
+                    except Exception as e:
+                        logger.error(f"testing text reading error: {e}")
                         pass
-                    
-                    # Only test OCR if no digital text found
-                    if digital_pages == 0:
-                        try:
-                            # Use lighter OCR test
-                            if hasattr(page, 'get_textpage_ocr'):
-                                ocr_pages += 1
-                                break
-                        except Exception:
-                            pass
                             
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Reading the book error: {e}")
                     continue
             
             # Process based on document type
             if digital_pages > 0:
                 # Digital PDF processing (safer)
+                print("\nProcessing digitally-born pdf\n")
                 for page_num in range(pages_to_process):
                     try:
                         page = doc[page_num]
@@ -298,6 +297,7 @@ class PdfDataCollector():
             
             elif ocr_pages > 0:
                 # OCR processing with reduced concurrency
+                print("\nProcessing OCR scanned pdf\n")
                 doc.close()  # Close before OCR to prevent conflicts
                 doc = None
                 #self.Multithreading(filename)  # Limit OCR pages
@@ -317,40 +317,24 @@ class PdfDataCollector():
         if self.save_as_text_file and self.Text:
             try:
                 with open(text_file_path, 'w', encoding='utf-8') as text_file:
-                    text_file.write(self.Text)
+                    if self.normalise:
+                        text_file.write(self.normalize_document(self.Text))
+                    else:
+                        text_file.write(self.Text)
             except Exception:
                 pass
+        result = (self.remove_characters_before_tokenization(self.normalize_document(self.Text))
+                   if self.normalise else self.remove_characters_before_tokenization(self.Text))
 
-        return self.Text
-    
-    def returnText(self):
-        """ Returns the text of the document"""
-        self._text = self.get_document(self.file_path) # a string
-        self.__text = self.remove_characters_before_tokenization(self._text)
-        return self._text, self.__text
-        
-    def get_bookmarks(self, filepath):
-        """ Returns bookmarks if any else None"""
-        self.bookmarks = {}
-        with fitz.open(filepath) as file:
-            toc = file.get_toc()
-            for level, title, page in toc:
-                self.bookmarks[page] = title
-        return self.bookmarks
-    
-    def returnBookmarks(self, file_path):
-        """ return a dictionary of the bookmarks else empty """
-        
-        return self.bookmarks
-
+        return result
 if __name__ == "__main__":
     #file_path = '/home/ngoni97/Documents/Python Programming/Machine Learning/2-Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tenso.pdf'
     #file_path = '/home/ngoni97/Documents/PHYSICS/ADVANCED/Fluid Mechanics__An Introduction to the Theory of Fluid Flows.pdf'
-    file_path = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
-    File_path = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
-    FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
+    #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
+    FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
+    #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
     t_start = time.perf_counter()
-    test = PdfDataCollector(FILE_PATH, 13, True, dpi=300)
+    test = PdfDataCollector(FILE_PATH, 13, True, True, dpi=300)
     #text = test.get_document()
     t_stop = time.perf_counter()
     print("total time = {:.2f}".format(t_stop - t_start))
