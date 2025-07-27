@@ -1,0 +1,205 @@
+import os
+from pdf2image import convert_from_path, convert_from_bytes
+from PIL import Image
+import io
+
+def convert_pdf_to_images(pdf_path, output_dir=None, dpi=200, fmt='PNG'):
+    """
+    Convert PDF to images using pdf2image
+    
+    Args:
+        pdf_path (str): Path to the PDF file
+        output_dir (str): Directory to save images (optional)
+        dpi (int): DPI for image conversion (default: 200)
+        fmt (str): Output format ('PNG', 'JPEG', etc.)
+    
+    Returns:
+        list: List of PIL Image objects
+    """
+    try:
+        # Convert PDF to list of PIL Images
+        images = convert_from_path(
+            pdf_path,
+            dpi=dpi,
+            output_folder=output_dir,
+            fmt=fmt
+        )
+        
+        print(f"Successfully converted {len(images)} pages from {pdf_path}")
+        return images
+        
+    except Exception as e:
+        print(f"Error converting PDF: {e}")
+        return []
+
+def convert_pdf_from_bytes(pdf_bytes, dpi=200):
+    """
+    Convert PDF from bytes to images
+    
+    Args:
+        pdf_bytes (bytes): PDF file as bytes
+        dpi (int): DPI for conversion
+    
+    Returns:
+        list: List of PIL Image objects
+    """
+    try:
+        images = convert_from_bytes(pdf_bytes, dpi=dpi)
+        print(f"Successfully converted {len(images)} pages from bytes")
+        return images
+    except Exception as e:
+        print(f"Error converting PDF from bytes: {e}")
+        return []
+
+def save_images_to_disk(images, output_dir, prefix="page", fmt="PNG"):
+    """
+    Save PIL images to disk
+    
+    Args:
+        images (list): List of PIL Image objects
+        output_dir (str): Output directory
+        prefix (str): Filename prefix
+        fmt (str): Image format
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    for i, img in enumerate(images):
+        filename = f"{prefix}_{i+1:03d}.{fmt.lower()}"
+        filepath = os.path.join(output_dir, filename)
+        img.save(filepath, fmt)
+        print(f"Saved: {filepath}")
+
+def process_images_with_pil(images):
+    """
+    Process images using PIL operations
+    
+    Args:
+        images (list): List of PIL Image objects
+    """
+    for i, img in enumerate(images):
+        print(f"\nPage {i+1} Info:")
+        print(f"  Size: {img.size}")
+        print(f"  Mode: {img.mode}")
+        print(f"  Format: {img.format}")
+        
+        # Example PIL operations
+        # Convert to grayscale
+        gray_img = img.convert('L')
+        
+        # Resize image
+        resized = img.resize((800, 600))
+        
+        # Crop image (left, top, right, bottom)
+        width, height = img.size
+        cropped = img.crop((0, 0, width//2, height//2))
+        
+        # Get pixel data
+        pixel_data = list(img.getdata())
+        print(f"  Total pixels: {len(pixel_data)}")
+
+def convert_with_specific_pages(pdf_path, first_page=1, last_page=None):
+    """
+    Convert specific pages from PDF
+    
+    Args:
+        pdf_path (str): Path to PDF
+        first_page (int): First page to convert (1-indexed)
+        last_page (int): Last page to convert (optional)
+    
+    Returns:
+        list: PIL Image objects for specified pages
+    """
+    try:
+        images = convert_from_path(
+            pdf_path,
+            first_page=first_page,
+            last_page=last_page,
+            dpi=200
+        )
+        print(f"Converted pages {first_page} to {last_page or 'end'}")
+        return images
+    except Exception as e:
+        print(f"Error converting specific pages: {e}")
+        return []
+
+def image_to_bytes(image, fmt='PNG'):
+    """
+    Convert PIL Image to bytes
+    
+    Args:
+        image: PIL Image object
+        fmt (str): Output format
+    
+    Returns:
+        bytes: Image as bytes
+    """
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format=fmt)
+    return img_bytes.getvalue()
+
+def main():
+    # Example usage
+    pdf_file = "example.pdf"
+    output_directory = "output_images"
+    
+    # Convert entire PDF
+    print("Converting entire PDF...")
+    images = convert_pdf_to_images(pdf_file, dpi=150)
+    
+    if images:
+        # Process images with PIL
+        process_images_with_pil(images)
+        
+        # Save to disk
+        save_images_to_disk(images, output_directory)
+        
+        # Example: Convert first image to different formats
+        first_image = images[0]
+        
+        # Save as JPEG
+        jpeg_path = os.path.join(output_directory, "first_page.jpg")
+        first_image.save(jpeg_path, "JPEG", quality=95)
+        
+        # Save as PNG
+        png_path = os.path.join(output_directory, "first_page.png")
+        first_image.save(png_path, "PNG")
+        
+        # Convert to bytes
+        img_bytes = image_to_bytes(first_image)
+        print(f"Image as bytes: {len(img_bytes)} bytes")
+    
+    # Convert specific pages
+    print("\nConverting specific pages...")
+    specific_pages = convert_with_specific_pages(pdf_file, first_page=1, last_page=3)
+    
+    # Example: Load PDF from bytes
+    if os.path.exists(pdf_file):
+        with open(pdf_file, 'rb') as f:
+            pdf_bytes = f.read()
+        
+        print("\nConverting from bytes...")
+        images_from_bytes = convert_pdf_from_bytes(pdf_bytes)
+
+# Advanced example with error handling and optimization
+def batch_convert_pdfs(pdf_directory, output_base_dir):
+    """
+    Convert multiple PDFs in batch
+    
+    Args:
+        pdf_directory (str): Directory containing PDF files
+        output_base_dir (str): Base output directory
+    """
+    for filename in os.listdir(pdf_directory):
+        if filename.lower().endswith('.pdf'):
+            pdf_path = os.path.join(pdf_directory, filename)
+            pdf_name = os.path.splitext(filename)[0]
+            output_dir = os.path.join(output_base_dir, pdf_name)
+            
+            print(f"\nProcessing: {filename}")
+            images = convert_pdf_to_images(pdf_path, dpi=150)
+            
+            if images:
+                save_images_to_disk(images, output_dir, prefix=pdf_name)
+
+if __name__ == "__main__":
+    main()
