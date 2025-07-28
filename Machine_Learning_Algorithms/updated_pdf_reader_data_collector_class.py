@@ -43,7 +43,7 @@ class PdfDataCollector():
 
         # initialise
         TEXT = self.get_document(self.file_path)
-        print("\n\nText =", TEXT)
+        #print("\n\nText =", TEXT)
         
     def remove_characters_before_tokenization(self, sentence,keep_apostrophes=False):
         if not sentence:
@@ -144,7 +144,7 @@ class PdfDataCollector():
         else:
             # original images
             images = convert_from_path(file_path, last_page=self.pages, dpi=self.dpi, fmt=fmt)
-            print("\nconverted images =", images)
+            #print("\nconverted images =", images)
 
         # creating folders corresponding to each book
         saved_images_book_path = os.path.join(enhanced_images, os.path.basename(file_path))
@@ -191,7 +191,7 @@ class PdfDataCollector():
         """ takes in a folder of files and uses multithreading to speed up the processing """
         threads = []
         FOLDER = os.listdir(PATH)
-        print('FOLDER =', FOLDER)
+        #print('FOLDER =', FOLDER)
         # create threads
         for file in FOLDER:
             path = os.path.join(PATH, file)
@@ -285,7 +285,7 @@ class PdfDataCollector():
             # Process based on document type
             if digital_pages > 0:
                 # Digital PDF processing (safer)
-                print("\nProcessing digitally-born pdf\n")
+                #print(f"Processing digitally-born pdf: {filename}\n")
                 for page_num in range(pages_to_process):
                     try:
                         page = doc[page_num]
@@ -299,7 +299,7 @@ class PdfDataCollector():
             
             elif ocr_pages > 0:
                 # OCR processing with reduced concurrency
-                print("\nProcessing OCR scanned pdf\n")
+                #print(f"Processing OCR scanned pdf: {filename}\n")
                 doc.close()  # Close before OCR to prevent conflicts
                 doc = None
                 #self.Multithreading(filename)  # Limit OCR pages
@@ -329,12 +329,13 @@ class PdfDataCollector():
                    if self.normalise else self.remove_characters_before_tokenization(self.Text))
 
         return result
+    
 if __name__ == "__main__":
     #file_path = '/home/ngoni97/Documents/Python Programming/Machine Learning/2-Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tenso.pdf'
     #file_path = '/home/ngoni97/Documents/PHYSICS/ADVANCED/Fluid Mechanics__An Introduction to the Theory of Fluid Flows.pdf'
     #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
-    FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
-    #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
+    #FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
+    FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
     t_start = time.perf_counter()
     test = PdfDataCollector(FILE_PATH, 13, True, True, dpi=300)
     #text = test.get_document()

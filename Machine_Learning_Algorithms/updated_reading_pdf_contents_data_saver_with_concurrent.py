@@ -21,16 +21,14 @@ Created on Tue Feb 18 00:50:46 2025
 import os
 import pandas as pd
 from collections.abc import Iterable
-from threading import Thread
+from threading import Thread, Lock
 import multiprocessing as mp
 import concurrent.futures
 import time
-import os, pathlib, pymupdf, fitz
+import os
 import re
-
-from dataset_collector_saver_class import LoadDataset 
-from updated_pdf_reader_data_collector_class import PdfDataCollector # change back to  original if it doesn't work
-from stripping_file_types import fileExtensionStripper
+ 
+from updated_pdf_reader_data_collector_class import PdfDataCollector
 from folder_iterator_class import FolderIterator
 from file_extension_tester import listDirFiles
 
@@ -38,13 +36,14 @@ from file_extension_tester import listDirFiles
 class DocumentContentDataset():
     def __init__(self, folder,*,
                  specific_file=None,
-                 pages=10, clean_text=True, save_as_text_file=False):
+                 pages=10, normalise=False, save_as_text_file=False):
         """specific_files refers to pdf, docx, etc. """
         self._folder_path = folder # the parent folder containing the children folders
         self._specific_file = specific_file
         self._pages = pages
-        self._clean_text = clean_text
+        self.normalise = normalise
         self._save_as_text_file = save_as_text_file
+        self.lock = Lock()
         
         self.Folder = FolderIterator(self._folder_path, folder_name=False)
         self.subFolders = self.Folder.returnCategories()
@@ -52,17 +51,8 @@ class DocumentContentDataset():
         # folders which contain files
         self.files = [file for file, *_ in
                       [listDirFiles(folder, size=False, fullpath=True) for folder in self.subFolders]]
-        """print('files = {}\n'.format(list(self.Flatten(self.files))))
-        for idx, file in enumerate(self.Flatten(self.files),1):
-            print("{} : {}\n".format(idx, file))"""
         self.returnFiles()
-
-        start_time = time.perf_counter()
-        print("reading pdfs and writing text files in progress\n")
-        #self.returnData()
         self.processData()
-        end_time = time.perf_counter()
-        print("reading and writing finished in {}s\n".format(round(end_time - start_time, 3)))
 
     def start_process(self, file):
         """
@@ -80,8 +70,9 @@ class DocumentContentDataset():
             that has been filtered and is saved locally in the default directory
 
         """
-        self.process = PdfDataCollector(file, self._pages, self._save_as_text_file)
-        return self.process.returnText()
+        self.process = PdfDataCollector(file, self._pages, self._save_as_text_file, normalise=self.normalise)
+
+        return self.process
     
     def processData(self):
         """ Returns a dictionary of files (keys) and their respective text (values)"""
@@ -91,9 +82,10 @@ class DocumentContentDataset():
             results = [executor.submit(self.start_process, file) for file in list(self.Flatten(self.files))]
             
             concurrent.futures.wait(results)
-
-            for result_ in results:
-                result_.result()
+            with self.lock:
+                for result_ in results:
+                    result_.result()
+                    time.sleep(0.5)
 
     def returnFiles(self):
         """ Returns a dictionary where the keys are the folder paths
@@ -117,28 +109,6 @@ class DocumentContentDataset():
             else:
                 yield x
                 
-    def remove_characters_before_tokenization(self, sentence,keep_apostrophes=False):
-        # string
-        sentence = (sentence.replace('_', ' ')).replace('-', ' ')
-        # bytes
-        #b_sentence = (sentence.replace(b'_', b' ')).replace(b'-', b' ')
-        
-        # string
-        PATTERN = re.compile('[?|$|&|*|%|@|(|)|~]') # add other characters here to remove them
-        pattern = re.compile('[^a-zA-Z]') # remove numbers
-        replacement = r' '
-        # bytes
-        b_PATTERN = re.compile(b'[?|$|&|*|%|@|(|)|~]') # add other characters here to remove them
-        b_pattern = re.compile(b'[^a-zA-Z]') # remove numbers
-        b_replacement = re.compile(b' ')
-        
-        if keep_apostrophes:
-            filtered_sentence = re.sub(pattern, replacement, re.sub(PATTERN, replacement, sentence))
-        else:
-            filtered_sentence = re.sub(pattern, replacement, re.sub(PATTERN, replacement, sentence))
-        return filtered_sentence.lower()
-
-                
 if __name__ == "__main__":
     path_1 = '/home/ngoni97/Documents/Python Programming'
     path_2 = '/home/ngoni97/Documents/PHYSICS'
@@ -146,7 +116,7 @@ if __name__ == "__main__":
     # start
     print('process in progress\n')
     start = time.perf_counter()
-    test = DocumentContentDataset(path_2, pages=13, save_as_text_file=True)
+    test = DocumentContentDataset(path_1, pages=13, save_as_text_file=True)
     #test.processData()
    
     #print(test.returnFiles())
