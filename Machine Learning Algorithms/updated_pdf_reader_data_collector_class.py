@@ -122,7 +122,7 @@ class PdfDataCollector():
         return processed_image
     
     def convert_pdf_to_images(self, file_path, save_images=False, *, prefix='page', fmt='PNG'):
-        destn = '/home/ngoni97/Documents/Documents/File Manager with ML/train_test_text_files/images_test'
+        destn = '/home/ngoni97/file-manger-with-ml/Test Data'
         
         if not os.path.exists(destn):
             os.makedirs(destn, exist_ok=True)
@@ -224,7 +224,7 @@ class PdfDataCollector():
             # fix this part since it specific to my files tree in my own PC
             self.main_folder_path = os.path.basename(os.path.dirname(os.path.dirname(filename)))
             self.parent_directory = os.path.join(
-                '/home/ngoni97/Documents/Documents/File Manager with ML/train_test_text_files', 
+                '/home/ngoni97/file-manger-with-ml/Test Data', 
                 self.main_folder_path
             )
             
