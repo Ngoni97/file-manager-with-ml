@@ -126,10 +126,10 @@ class PdfDataCollector():
         
         if not os.path.exists(destn):
             os.makedirs(destn, exist_ok=True)
-        original_images = os.path.join(destn, 'Original Images')
+        original_images = os.path.join(destn, 'Original_Images')
         if not os.path.exists(original_images):
             os.makedirs(original_images, exist_ok=True)
-        enhanced_images = os.path.join(destn, 'Enhanced Images')
+        enhanced_images = os.path.join(destn, 'Enhanced_Images')
         if not os.path.exists(enhanced_images):
             os.makedirs(enhanced_images)
 
