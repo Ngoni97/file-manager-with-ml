@@ -9,12 +9,9 @@ Created on Thu Feb 13 04:01:14 2025
 # reading the PDFs after colleciing them
 
 import os
-import pandas as pd
 from collections.abc import Iterable
 
-from dataset_collector_saver_class import LoadDataset
-from pdf_reader_data_collector_class import PdfDataCollector
-from stripping_file_types import fileExtensionStripper
+from updated_pdf_reader_data_collector_class import PdfDataCollector
 from folder_iterator_class import FolderIterator
 from file_extension_tester import listDirFiles
 
@@ -22,14 +19,14 @@ from file_extension_tester import listDirFiles
 class DocumentContentDataset():
     def __init__(self, folder,*,
                  specific_file=None,
-                 pages=10, clean_text=True, read_ocr=False, save_as_text_file=False):
+                 pages=10, save_as_text_file=False, normalise=False, dpi=300):
         """specific_files refers to pdf, docx, etc. """
         self._folder_path = folder # the parent folder containing the children folders
         self._sepcific_file = specific_file
         self._pages = pages
-        self._clean_text = clean_text
-        self._read_ocr = read_ocr
         self._save_as_text_file = save_as_text_file
+        self.normalise = normalise
+        self.dpi = dpi
         
         self.Folder = FolderIterator(self._folder_path, folder_name=False)
         self.subFolders = self.Folder.returnCategories()
@@ -38,7 +35,8 @@ class DocumentContentDataset():
         self.files = [file for file, *_ in
                       [listDirFiles(folder, size=False, fullpath=True) for folder in self.subFolders]]
         
-        print(self.files)
+        #print(self.files)
+
     def returnFiles(self):
         """ Returns a dictionary where the keys are the folder paths
             and the values corresponding to each key are the files (full path) contained
@@ -53,19 +51,10 @@ class DocumentContentDataset():
     
     def returnData(self):
         """ Returns a dictionary of files (keys) and their respective text (values)"""
-        self.data = {}
         for file in self.Flatten(self.Data.values()):
             pdf_read = PdfDataCollector(file, self._pages, 
-                                        read_ocr=self._read_ocr, 
-                                        save_as_text_file=self._save_as_text_file)
-            
-            text, clean_text = pdf_read.returnText()
-            if self._clean_text == True:
-                self.data[file] = clean_text
-            else:
-                self.data[file] = text
-                pass
-        return self.data
+                                        save_as_text_file=self._save_as_text_file,
+                                        normalise=self.normalise, dpi=self.dpi)
     
     def Flatten(self, items, ignore_types=(str, bytes)):
         """ Flattening a Nested Sequence
@@ -76,11 +65,12 @@ class DocumentContentDataset():
                 yield from self.Flatten(x)
             else:
                 yield x
+
 if __name__ == "__main__":
-    path = '/home/ngoni97/Documents/Python Programming'
-    test = DocumentContentDataset(path, pages=13, read_ocr=True)
+    PATH = '/home/ngoni97/Documents/Python Programming'
+    test = DocumentContentDataset(PATH, pages=13, save_as_text_file=True, normalise=True)
     print(test.returnFiles().values())
-    data = test.returnData()
+    
     
 # link folder_name the file is found
 # with the file_name

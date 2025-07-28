@@ -122,7 +122,7 @@ class PdfDataCollector():
         return processed_image
     
     def convert_pdf_to_images(self, file_path, save_images=False, *, prefix='page', fmt='PNG'):
-        destn = '/home/ngoni97/file-manger-with-ml/Test Data'
+        destn = '/home/ngoni97/file-manger-with-ml/Test_Data'
         
         if not os.path.exists(destn):
             os.makedirs(destn, exist_ok=True)
@@ -201,9 +201,11 @@ class PdfDataCollector():
         with self.lock:
             for thread in threads:
                 thread.start()
+                time.sleep(1)
             # join threads
             for thread in threads:
                 thread.join()
+                time.sleep(0.5)
         
         Text = ""
         for page in sorted(self.book_dict):
@@ -224,7 +226,7 @@ class PdfDataCollector():
             # fix this part since it specific to my files tree in my own PC
             self.main_folder_path = os.path.basename(os.path.dirname(os.path.dirname(filename)))
             self.parent_directory = os.path.join(
-                '/home/ngoni97/file-manger-with-ml/Test Data', 
+                '/home/ngoni97/file-manger-with-ml/Test_Data', 
                 self.main_folder_path
             )
             
@@ -330,8 +332,8 @@ class PdfDataCollector():
 if __name__ == "__main__":
     #file_path = '/home/ngoni97/Documents/Python Programming/Machine Learning/2-Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tenso.pdf'
     #file_path = '/home/ngoni97/Documents/PHYSICS/ADVANCED/Fluid Mechanics__An Introduction to the Theory of Fluid Flows.pdf'
-    FILE_PATH = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
-    #FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
+    #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
+    FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
     #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
     t_start = time.perf_counter()
     test = PdfDataCollector(FILE_PATH, 13, True, True, dpi=300)
