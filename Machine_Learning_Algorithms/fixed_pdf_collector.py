@@ -43,7 +43,6 @@ class PdfDataCollector():
 
         # initialise
         TEXT = self.get_document(self.file_path)
-        #print("\n\nText =", TEXT)
         
     def remove_characters_before_tokenization(self, sentence,keep_apostrophes=False):
         if not sentence:
@@ -144,7 +143,6 @@ class PdfDataCollector():
         else:
             # original images
             images = convert_from_path(file_path, last_page=self.pages, dpi=self.dpi, fmt=fmt)
-            #print("\nconverted images =", images)
 
         # creating folders corresponding to each book
         saved_images_book_path = os.path.join(enhanced_images, os.path.basename(file_path))
@@ -167,13 +165,11 @@ class PdfDataCollector():
         """ Read """
         text = ""
         page = os.path.basename(FULL_PATH).strip('.pdf').strip('page_')
-        print(f"initialising scanning page {page}\n")
         with pymupdf.open(FULL_PATH) as file:
             try:
                 for pg in file[:1]:
                     try:
                         text_page = pg.get_textpage_ocr(full=True)
-                        #print(f"getting text for page {page}\n")
                         text += text_page.extractTEXT()
                     except Exception as e:
                         logger.error(f"pymupdf error: {e}")
@@ -183,9 +179,6 @@ class PdfDataCollector():
             except Exception as e:
                     logger.error(f"Reading OCR PDF to text error: {e}")
                     pass
-
-        # delete the folder after processed
-        #os.rmdir(PATH)
     
     def Multithreading(self, PATH):
         """ takes in a folder of files and uses multithreading to speed up the processing """
@@ -210,6 +203,11 @@ class PdfDataCollector():
         Text = ""
         for page in sorted(self.book_dict):
             Text += self.book_dict[page]
+
+        # delete the folder when done
+        for file in os.listdir(PATH):
+            os.remove(os.path.join(PATH, file)) # first remove the files
+        os.rmdir(PATH) # then finally remove the parent directory
 
         return Text
 
@@ -324,7 +322,7 @@ class PdfDataCollector():
             # Process based on document type
             if digital_pages > 0:
                 # Digital PDF processing (safer)
-                logger.info(f"Processing digitally-born pdf: {filename}")
+                logger.info(f"Processing digitally-born pdf: {os.path.basename(filename)}")
                 for page_num in range(pages_to_process):
                     try:
                         page = doc[page_num]
@@ -339,7 +337,7 @@ class PdfDataCollector():
             
             elif ocr_pages > 0:
                 # OCR processing with reduced concurrency
-                logger.info(f"Processing OCR scanned pdf: {filename}")
+                logger.info(f"Processing OCR scanned pdf: {os.path.basename(filename)}")
                 doc.close()  # Close before OCR to prevent conflicts
                 doc = None
                 self.Text = self.convert_pdf_to_images(filename)
@@ -406,3 +404,6 @@ if __name__ == "__main__":
     print("total time = {:.2f}".format(t_stop - t_start))
     #text, clean_text = test.returnText()
     #print(clean_text)
+
+    """ERROR:__main__:pymupdf error: code=3: OCR initialisation failed
+    MuPDF error: argument error: Attempt to use Leptonica from 2 threads at once!"""

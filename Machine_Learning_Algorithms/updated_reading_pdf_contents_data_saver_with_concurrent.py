@@ -113,11 +113,11 @@ class DocumentContentDataset():
 if __name__ == "__main__":
     path_1 = '/home/ngoni97/Documents/Python Programming'
     path_2 = '/home/ngoni97/Documents/PHYSICS'
-    Path = '/home/ngoni97/Documents/MATHEMATICS'
+    path_3 = '/home/ngoni97/Documents/MATHEMATICS'
     # start
     print('process in progress\n')
     start = time.perf_counter()
-    test = DocumentContentDataset(path_1, pages=13, save_as_text_file=True)
+    test = DocumentContentDataset(path_2, pages=13, save_as_text_file=True)
     #test.processData()
    
     #print(test.returnFiles())
