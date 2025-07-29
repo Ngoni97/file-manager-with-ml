@@ -28,7 +28,8 @@ import time
 import os
 import re
  
-from updated_pdf_reader_data_collector_class import PdfDataCollector
+from fixed_pdf_collector import PdfDataCollector
+#from updated_pdf_reader_data_collector_class import PdfDataCollector
 from folder_iterator_class import FolderIterator
 from file_extension_tester import listDirFiles
 
