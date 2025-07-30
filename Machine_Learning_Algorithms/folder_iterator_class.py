@@ -5,6 +5,7 @@ Created on Sun Jan 26 03:13:36 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 import os
 import timeit

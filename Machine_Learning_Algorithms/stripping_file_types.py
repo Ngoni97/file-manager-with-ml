@@ -5,6 +5,7 @@ Created on Thu Feb 13 02:08:47 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # stripping the file type endings
 import re

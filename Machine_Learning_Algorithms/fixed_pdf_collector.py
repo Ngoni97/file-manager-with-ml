@@ -5,36 +5,37 @@ Created on Mon Jul  7 21:58:40 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # a class for reading the contents pages of pdf files
 # aids in the data collection for training the ml-classification algorithms
 import os, re
-import pymupdf, fitz
+import pymupdf
 import nltk
-import pathlib
 from threading import Thread, Lock
-import concurrent.futures
 import time
-from collections.abc import Iterable
 import cv2
 from pdf2image import convert_from_path
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance
 import numpy as np
-import matplotlib.pyplot as plt
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 class PdfDataCollector():
-    def __init__(self, file_path, pages=None, save_as_text_file=False, normalise=False, *, dpi=300):
+    """
+    A class that takes in a pdf file and reads the text
+    and saves it as a text file
+    """
+    def __init__(self, file_path, pages=None, save_as_text_file=False, normalise=False, *, dpi=300, save_images=False):
         self.file_path = file_path
         self.pages = pages
         self.save_as_text_file = save_as_text_file
         self.normalise = normalise
         self.dpi = dpi
+        self.save_images = save_images
         
         self.file_name = os.path.basename(self.file_path)
         self.book_dict = {}
@@ -45,6 +46,7 @@ class PdfDataCollector():
         TEXT = self.get_document(self.file_path)
         
     def remove_characters_before_tokenization(self, sentence,keep_apostrophes=False):
+        """ remove characters and keeps words only"""
         if not sentence:
             return ""
         # string
@@ -121,28 +123,20 @@ class PdfDataCollector():
         return processed_image
     
     def convert_pdf_to_images(self, file_path, save_images=False, *, prefix='page', fmt='PNG'):
+        """ converts a single book into a series of single PDFs as per page, saves it in the respective folder
+            then processes those pages
+        """
         destn = '/home/ngoni97/file-manger-with-ml/Test_Data'
-        
+        # initialise directories
         if not os.path.exists(destn):
             os.makedirs(destn, exist_ok=True)
-        original_images = os.path.join(destn, 'Original_Images')
-        if not os.path.exists(original_images):
-            os.makedirs(original_images, exist_ok=True)
+
         enhanced_images = os.path.join(destn, 'Enhanced_Images')
         if not os.path.exists(enhanced_images):
             os.makedirs(enhanced_images)
 
-        if save_images:
-            # original images
-            images = convert_from_path(file_path, last_page=self.pages, output_folder=original_images, dpi=self.dpi, fmt=fmt)
-    
-            for i, img in enumerate(images,1):
-                filename = f"{prefix}_{i:04d}.{fmt.lower()}"
-                filepath = os.path.join(original_images, filename)
-                img.save(filepath, fmt)
-        else:
-            # original images
-            images = convert_from_path(file_path, last_page=self.pages, dpi=self.dpi, fmt=fmt)
+        # original images
+        images = convert_from_path(file_path, last_page=self.pages, dpi=self.dpi, fmt=fmt)
 
         # creating folders corresponding to each book
         saved_images_book_path = os.path.join(enhanced_images, os.path.basename(file_path))
@@ -162,7 +156,7 @@ class PdfDataCollector():
         return self.normalize_document(TEXT) if self.normalise else TEXT
     
     def Read_ocr(self, FULL_PATH):
-        """ Read """
+        """ Read OCR scanned documents """
         text = ""
         page = os.path.basename(FULL_PATH).strip('.pdf').strip('page_')
         with pymupdf.open(FULL_PATH) as file:
@@ -184,7 +178,7 @@ class PdfDataCollector():
         """ takes in a folder of files and uses multithreading to speed up the processing """
         threads = []
         FOLDER = os.listdir(PATH)
-        #print('FOLDER =', FOLDER)
+
         # create threads
         for file in FOLDER:
             path = os.path.join(PATH, file)
@@ -205,9 +199,10 @@ class PdfDataCollector():
             Text += self.book_dict[page]
 
         # delete the folder when done
-        for file in os.listdir(PATH):
-            os.remove(os.path.join(PATH, file)) # first remove the files
-        os.rmdir(PATH) # then finally remove the parent directory
+        if not self.save_images:
+            for file in os.listdir(PATH):
+                os.remove(os.path.join(PATH, file)) # first remove the files
+            os.rmdir(PATH) # then finally remove the parent directory
 
         return Text
 
@@ -268,7 +263,7 @@ class PdfDataCollector():
             # fix this part since it specific to my files tree in my own PC
             self.main_folder_path = os.path.basename(os.path.dirname(os.path.dirname(filename)))
             self.parent_directory = os.path.join(
-                '/home/ngoni97/file-manger-with-ml/Test_Data', 
+                '/home/ngoni97/file-manger-with-ml/Test_Data/Saved_Text_Files', 
                 self.main_folder_path
             )
             
@@ -297,7 +292,7 @@ class PdfDataCollector():
             
             pages_to_process = min(self.pages or doc_length, doc_length)
             
-            # Test first few pages to determine document type (more conservative)
+            # Test first few pages to determine document type
             test_pages = min(5, doc_length)
             
             for page_num in range(test_pages):
@@ -382,7 +377,7 @@ class PdfDataCollector():
                     if self.normalise:
                         text_file.write(self.remove_characters_before_tokenization(self.normalize_document(self.Text)))
                     else:
-                        text_file.write(self.Text)
+                        text_file.write(self.remove_characters_before_tokenization(self.Text))
             except Exception as e:
                 logger.error(f"Error saving text file: {e}")
 
@@ -392,18 +387,7 @@ class PdfDataCollector():
         return result
     
 if __name__ == "__main__":
-    #file_path = '/home/ngoni97/Documents/Python Programming/Machine Learning/2-Aurélien-Géron-Hands-On-Machine-Learning-with-Scikit-Learn-Keras-and-Tenso.pdf'
-    #file_path = '/home/ngoni97/Documents/PHYSICS/ADVANCED/Fluid Mechanics__An Introduction to the Theory of Fluid Flows.pdf'
-    #FILE_PATH = '/home/ngoni97/Documents/PHYSICS/ADVANCED/physics-for-scientists-and-engineers-with-modern-physics-serwayjewett.pdf'
-    #FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
-    FILE_PATH = '/home/ngoni97/Documents/PHYSICS/BIOGRAPHY/newton-opticks-4ed.pdf'
-    t_start = time.perf_counter()
-    test = PdfDataCollector(FILE_PATH, 13, True, True, dpi=300)
-    #text = test.get_document()
-    t_stop = time.perf_counter()
-    print("total time = {:.2f}".format(t_stop - t_start))
-    #text, clean_text = test.returnText()
-    #print(clean_text)
 
-    """ERROR:__main__:pymupdf error: code=3: OCR initialisation failed
-    MuPDF error: argument error: Attempt to use Leptonica from 2 threads at once!"""
+    FILE_PATH = '/home/ngoni97/Documents/MATHEMATICS/Principia Mathematica/Principia_Mathematica [volume.I] alfred_north_whitehead x betrand_russell.pdf'
+    
+    test = PdfDataCollector(FILE_PATH, 13, True, True, dpi=300, save_images=True)

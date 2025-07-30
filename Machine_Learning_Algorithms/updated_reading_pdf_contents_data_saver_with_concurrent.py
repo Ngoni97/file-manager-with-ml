@@ -14,33 +14,31 @@ Created on Tue Feb 18 00:50:46 2025
 @author: ngoni97
 """
 # どうもありがとうございます == Dōmo arigatōgozaimasu
-# testing multithreading and multiprocessing
+# using multithreading
 
 # reading the PDFs after colleciing them
 
 import os
-import pandas as pd
 from collections.abc import Iterable
-from threading import Thread, Lock
-import multiprocessing as mp
+from threading import Lock
 import concurrent.futures
 import time
 import os
-import re
  
 from fixed_pdf_collector import PdfDataCollector
-#from updated_pdf_reader_data_collector_class import PdfDataCollector
 from folder_iterator_class import FolderIterator
 from file_extension_tester import listDirFiles
 
-
 class DocumentContentDataset():
-    def __init__(self, folder,*,
-                 specific_file=None,
+    """ A class that takes in a folder and reads the pdf files inside
+        concurrently and returns text files 
+    """
+
+    def __init__(self, folder,*, specific_file,
                  pages=10, normalise=False, save_as_text_file=False):
-        """specific_files refers to pdf, docx, etc. """
+        
         self._folder_path = folder # the parent folder containing the children folders
-        self._specific_file = specific_file
+        self.specific_file = specific_file # specific_files refers to pdf, docx, etc. 
         self._pages = pages
         self.normalise = normalise
         self._save_as_text_file = save_as_text_file
@@ -48,11 +46,12 @@ class DocumentContentDataset():
         
         self.Folder = FolderIterator(self._folder_path, folder_name=False)
         self.subFolders = self.Folder.returnCategories()
-        # a list of folder -> files, that is the individual lists are
-        # folders which contain files
+
         self.files = [file for file, *_ in
                       [listDirFiles(folder, size=False, fullpath=True) for folder in self.subFolders]]
+        
         self.returnFiles()
+        # start the process
         self.processData()
 
     def start_process(self, file):
@@ -78,7 +77,6 @@ class DocumentContentDataset():
     def processData(self):
         """ Returns a dictionary of files (keys) and their respective text (values)"""
 
-        # using another method
         with concurrent.futures.ThreadPoolExecutor() as executor:
             results = [executor.submit(self.start_process, file) for file in list(self.Flatten(self.files))]
             
@@ -114,29 +112,5 @@ if __name__ == "__main__":
     path_1 = '/home/ngoni97/Documents/Python Programming'
     path_2 = '/home/ngoni97/Documents/PHYSICS'
     path_3 = '/home/ngoni97/Documents/MATHEMATICS'
-    # start
-    print('process in progress\n')
-    start = time.perf_counter()
-    test = DocumentContentDataset(path_2, pages=13, save_as_text_file=True)
-    #test.processData()
    
-    #print(test.returnFiles())
-    # end
-    end = time.perf_counter()
-    print('process finished\n')
-    
-    print('time taken for execution = {}s'.format(round(end-start, 3)))
-
-    
-# link folder_name the file is found
-# with the file_name
-# and the file_content
-
-# folder_name -> file_name -> file_content
-
-# at the end the folder_name == classification -> sum total file_content of each file
-
-
-# error: Get_Scanned_Document is not working properly, it still skips out scanned pdf's
-# so, for now I am gonna work with the digitally-born pdf's with the machine learning algorithms
-# the problem is that the algorithm works perfectly if fed files one at a time and not as threads
+    test = DocumentContentDataset(path_3, pages=13, save_as_text_file=True)

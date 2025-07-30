@@ -5,6 +5,7 @@ Created on Sun Jan 19 03:11:09 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # documents data collecter and saver
 

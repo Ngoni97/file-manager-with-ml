@@ -5,6 +5,8 @@ Created on Sun Jan 26 01:36:21 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
+
 import os
 import re
 import numpy as np
@@ -12,7 +14,6 @@ from collections import OrderedDict
 from collections.abc import Iterable
 
 from folder_iterator_class import FolderIterator
-from file_extension_tester import listDirFiles
 from stripping_file_types import fileExtensionStripper
 
 class LoadDataset(object):

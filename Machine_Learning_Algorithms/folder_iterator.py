@@ -5,9 +5,9 @@ Created on Mon Jan 20 04:15:22 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # Folder iterator
-
 import os
 import timeit
 

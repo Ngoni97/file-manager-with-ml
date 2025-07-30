@@ -5,6 +5,7 @@ Created on Wed Jan  8 02:52:42 2025
 
 @author: ngoni97
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # reading the contents of a folder and displaying the details as a pandas
 # DataFrame

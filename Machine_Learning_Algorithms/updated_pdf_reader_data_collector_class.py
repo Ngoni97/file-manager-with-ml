@@ -29,12 +29,13 @@ logger = logging.getLogger(__name__)
 
 
 class PdfDataCollector():
-    def __init__(self, file_path, pages=None, save_as_text_file=False, normalise=False, *, dpi=300):
+    def __init__(self, file_path, pages=None, save_as_text_file=False, normalise=False, *, dpi=300, save_images=False):
         self.file_path = file_path
         self.pages = pages
         self.save_as_text_file = save_as_text_file
         self.normalise = normalise
         self.dpi = dpi
+        self.save_images = save_images
         
         self.file_name = os.path.basename(self.file_path)
         self.book_dict = {}
@@ -183,9 +184,6 @@ class PdfDataCollector():
             except Exception as e:
                     logger.error(f"Reading OCR PDF to text error: {e}")
                     pass
-
-        # delete the folder after processed
-        #os.rmdir(PATH)
     
     def Multithreading(self, PATH):
         """ takes in a folder of files and uses multithreading to speed up the processing """

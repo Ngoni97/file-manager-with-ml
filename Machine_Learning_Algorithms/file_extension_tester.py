@@ -4,6 +4,7 @@ Created on Wed Nov 27 13:23:20 2024
 
 @author: Ngoni
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 # test for file exensions and report the statistics
 # used to creare the message dialog for what kind of files to are in a directory
