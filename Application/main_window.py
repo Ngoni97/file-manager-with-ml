@@ -1,4 +1,5 @@
 # MainWindow
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 import sys
 import os
