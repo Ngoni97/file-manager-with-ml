@@ -14,7 +14,7 @@ import os
 import pandas as pd
 import numpy as np
 from random import shuffle
-from file_extension_tester import listDirFiles
+from FileExtensionTester import listDirFiles
 
 def CollectingData(directory, *, view=False, Shuffle=True):
     """ Collects data and stores it into an array """

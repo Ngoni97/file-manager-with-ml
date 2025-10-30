@@ -4,7 +4,7 @@ date initialised: 2024/09/28 (the initial date of the project commencement)
 date modified: 2024/10/31 
 """
 # Main Application
-
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 # import from the different separate customised modules
 
 import sys
@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (
     )
 
 # use this code after compiling the application
-from Pop_up_window_3 import Ui_MainWindow
+from PopUpWindow import Ui_MainWindow
 """
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, obj=None, **kwargs):

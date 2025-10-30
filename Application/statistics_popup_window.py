@@ -80,7 +80,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
     
 if __name__ == "__main__":
-    from file_extension_tester import listDirFiles
+    from FileExtensionTester import listDirFiles
     
     App = QApplication(sys.argv)
     documents, images, music, videos, programming, executable = listDirFiles("C:/Users/Admin/Downloads/Unsorted")

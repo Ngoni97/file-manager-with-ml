@@ -172,7 +172,7 @@
          </widget>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignRight">
+       <item alignment="Qt::AlignRight">
         <widget class="QListView" name="listView"/>
        </item>
       </layout>

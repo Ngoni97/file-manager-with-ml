@@ -4,7 +4,7 @@ Created on Fri Nov 22 11:53:09 2024
 
 @author: Ngoni
 """
-
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 # singly linked list class for referencing directories
 
 class LinkedDirectory(object):

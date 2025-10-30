@@ -5,7 +5,7 @@ Created on Wed Jan  1 02:02:59 2025
 
 @author: ngoni97
 """
-
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 import os
 import shutil
 import pathlib

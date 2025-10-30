@@ -19,12 +19,12 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout)
 
-from main_MainWindow import PopUpMainWindow
-from linked_directories_class import LinkedDirectory
-from file_extension_tester import listDirFiles
-from stats_pop_up_window import StatsPopupWindow
-from move_files_module import Move, _Move, __Move
-from collecting_data import CollectingData
+from MainPopUpWindow import PopUpMainWindow
+from LinkedDirectories import LinkedDirectory
+from FileExtensionTester import listDirFiles
+from StatsPopUpWindow import StatsPopupWindow
+from MoveFiles import Move, _Move, __Move
+from DataCollection import CollectingData
 #from dataset_collector_saver import Dataset
 
 class TableModel(QAbstractTableModel):
@@ -423,7 +423,8 @@ App.setStyle('Fusion')
 # for Windows OS
 #dirPath = "C:\\Users\\Admin"
 # for Kali Linux OS
-dirPath = "/media/ngoni97/9ine7even/Users/Admin"
+#dirPath = "/media/ngoni97/9ine7even/Users/Admin"
+dirPath = os.path.expanduser("~") # user's home directory
 window = MainWindow(dir_path=dirPath)
 window.show()
 sys.exit(App.exec_())

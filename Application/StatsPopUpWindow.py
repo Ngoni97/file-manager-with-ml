@@ -4,6 +4,7 @@ Created on Sat Dec 21 14:42:58 2024
 
 @author: Ngoni
 """
+# どうもありがとうございます == Dōmo arigatōgozaimasu
 
 import sys
 import os
@@ -73,7 +74,7 @@ class StatsPopupWindow(QMainWindow, QDialog):
         self.close()
 
 if __name__ == "__main__":
-    from file_extension_tester import listDirFiles
+    from Application.FileExtensionTester import listDirFiles
 
     App = QApplication(sys.argv)
     documents, images, music, videos, programming, executable = listDirFiles("C:/Users/Admin/Downloads/Unsorted")
